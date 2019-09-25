@@ -1,0 +1,10 @@
+/* Whole document: */
+body{
+  font-family: Ubuntu;
+  font-size: 12pt;
+}
+/* Headers */
+h1{
+  font-size: 20pt;
+}
+h2, h3, h4, h5, h6{font size:16pt;}

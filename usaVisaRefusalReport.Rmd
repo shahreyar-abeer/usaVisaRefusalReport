@@ -1,0 +1,178 @@
+---
+title: "The U.S. visa refusal rates analysed by factors"
+author: "Zauad Shahreer Abeer"
+date: "8 April 2017"
+output:
+  html_document:
+    css: style.css
+  word_document: default
+  pdf_document:
+    latex_engine: xelatex
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+The United States of America is a place of interest for people wanting to go abroad from around the world now a days. Whatever the reason, be it higher education, seeking jobs or just touring, people seem to prefer the U.S. over other countries. One of the main concerns of people going abroad is visa acceptance. U.S. is very conservative when it comes to visa processing. Cubans should know this very well. Around $81\%$ of their visa applications have been refused in $2016$ according to [U.S. Department of State](https://travel.state.gov/content/dam/visas/Statistics/Non-Immigrant-Statistics/RefusalRates/FY16.pdf), topping the list of countries with highest visa refusal rates. A lot of countries have refusal rates above $60\%$ percent, which naturally is very high. Top ten countries with the highest and lowest visa refusal rates is shown below.
+
+```{r}
+library(xlsx)
+library(Hmisc)
+library(plotly)
+dataSet <- read.xlsx("./usaVisaRefusalRateByGDPandReligionData.xlsx", sheetIndex = 1)
+dataSet$NA. <- NULL
+dataSet$Country <- as.factor(capitalize(as.character(dataSet$Country)))
+dataSet <- arrange(dataSet, desc(Rate))
+topTen <- dataSet[1:10,]
+topTen$Country <- factor(topTen$Country)
+bottomTen <- dataSet[178:188 ,]
+bottomTen$Country <- factor(bottomTen$Country)
+
+# creating plots of top 10 rates
+top <- plot_ly(topTen, x = topTen$Rate, 
+             y = reorder(topTen$Country, topTen$Rate), 
+             type = "bar", orientation = "h", 
+             name = "Top 10", 
+             marker = list(color = 'rgba(50, 171, 96, .6)',
+                           line = list(color = 'rgba(50, 171, 96,1)',
+                                       width = 1))) %>%
+  layout(xaxis = list(domain = c(.08,.95)),
+         yaxis = list(domain = c(0, .96))) %>%
+  add_annotations(paste(topTen$Rate, "%"),
+                  showarrow = F,
+                  xref = "x",
+                  yref = "y")
+
+bottom <- plot_ly(bottomTen, x = bottomTen$Rate, 
+             y = reorder(bottomTen$Country, bottomTen$Rate), 
+             type = "bar", orientation = "h", 
+             name = "Bottom 10", 
+             marker = list(color = 'rgba(180,0,20, .6)',
+                           line = list(color = 'rgba(128,0,0,1)',
+                                       width = 1))) %>%
+  layout(xaxis = list(domain = c(.25, .8),
+                      title = "Bottom 10"),
+         yaxis = list(domain = c(0, .96))) %>%
+  add_annotations(paste(bottomTen$Rate, "%"),
+                  showarrow = F,
+                  xref = "x2",
+                  yref = "y2",
+                  x = bottomTen$Rate / 1.5)
+
+sub <- subplot(top, bottom) %>%
+  layout(title = "USA visa refusal rates by country(B visas)",
+         autosize = F, width = 900, height = 370,
+         showlegend = T,
+         paper_bgcolor = 'rgb(248,245,252)',
+         plot_bgcolor = 'rgb(245,248,252)') 
+
+sub
+```
+
+Let us now study some factors that are considered to affect the visa processing system. One of the main factors is the GDP per capita of the applicant's native country. It is usually the case that as the GDP of a country increases, more of its resident's visa applications are accepted by other countries. *Liberia* and *Gambia* have about $70\%$ rates of refusal according to [World Bank Indicators](http://databank.worldbank.org/data/reports.aspx?source=2&series=NY.GDP.PCAP.CD&country=). Both countries have a GDP per capita which is less than $\$500$. On the other hand, *Luxembourg* has a mere $7.6\%$ rate of refusal which can be credited to its GDP per capita being over $\$100,000$
+The fact is illustrated by the following figures.
+
+```{r}
+scatter <- plot_ly(x = dataSet$GDP, y = dataSet$Rate,
+                   name = "scatterplot",
+                   text = paste(dataSet$Country),
+                   marker = list(color = 'rgba(128,0,128, 1)',
+                                 line = list(color = 
+                                               'rgba(128,0,128,1)',
+                                             width = 1))) %>%
+  layout(xaxis = list(rangemode = "nonnegative",
+                      title = "GDP per capita($)"),
+         yaxis = list(rangemode = "nonnegative",
+                      title = "Visa refusal rate"))
+
+categs <- c("less than 5000", "more than 5000")
+means <- c(mean(dataSet$Rate[dataSet$GDP < 5000]),
+           mean(dataSet$Rate[dataSet$GDP > 5000]))
+barData <- data.frame(categs, means)
+bar <- plot_ly(barData,
+               x = ~categs,
+               y = ~means,
+               name = "bar",
+               marker = list(color = 'rgba(100, 100, 96, .8)',
+                             line = list(color = 'rgba(100, 100, 96, 1)',
+                                         width = 2))) %>%
+  layout(xaxis = list(rangemode = "nonnegative",
+                      title = "GDP per capita($)"),
+         yaxis = list(rangemode = "nonnegative",
+                      title = "Visa refusal rate",
+                      showline = TRUE)) %>%
+  add_annotations(paste(round(means,2), "%"),
+                  showarrow = F,
+                  xref = "x2",
+                  yref = "y2",
+                  y = means / 2)
+both <- subplot(scatter, bar, titleX = T, titleY = T) %>%
+  layout(title = "Visa refusal rate by GDP per capita",
+         autosize = F, width = 900, height = 370,
+         showlegend = F,
+         paper_bgcolor = 'rgb(248,245,252)',
+         plot_bgcolor = 'rgb(245,248,252)')
+cat("\n")
+cat("\n")
+both
+```
+
+The scatter plot in the left indicates that as the GDP per capita is increasing, the refusal rates are going down on average. The average refusal rate of countries with GDP per capita less than $\$5000$ is about $37\%$ whereas the average refusal rate countries with GDP per capita greater than $\$5000$ is only about $16\%$! Although there are some exceptions, it generally follows that the visa refusal rates decrease with the increase of GDP per capita of a country.  
+
+Another factor is religion. Religion was not such a serious issue in the past. Recent events have made religion an important factor in visa processing. Muslims are not allowed easy access to other countried esp. *Europe and the U.S*. So, visas of people from Muslim countries are generally refused. *Afghanistan* has a refusal rate of $73\%$, second in the list. A detailed study of the refusal rates based on religion reveals this more clearly.
+
+```{r}
+
+y = c(mean(dataSet$Rate[dataSet$Muslim > 50]),
+      mean(dataSet$Rate[dataSet$Christian > 50]),
+      mean(dataSet$Rate[dataSet$Hindu > 50]),
+      mean(dataSet$Rate[dataSet$Buddhist > 50]),
+      mean(dataSet$Rate[dataSet$Jewish > 50]),
+      mean(dataSet$Rate[dataSet$Others > 50]))
+
+x = c("Muslim > 50%", "Christian > 50%", "Hindu > 50%",
+      "Buddhsits > 50%", "Jewish > 50%", "Others > 50%")
+d <- data.frame(x, y)
+d <- arrange(d, desc(y))
+
+bar2 <- plot_ly(d, x = reorder(d$x, -d$y), y = round(d$y, digits = 2),
+                type = "bar",
+                marker = list(color = 'rgba(20,100,100,.6)',
+                              line = list(color = 'rgba(20,100,100,1)', width = 2))) %>%
+    layout(xaxis = list(rangemode = "nonnegative",
+                      title = "Population"),
+         yaxis = list(rangemode = "nonnegative",
+                      title = "Average visa refusal rate",
+                      showline = TRUE),
+         autosize = F, width = 900, height = 400,
+         title = "USA visa refusal rates by Religion",
+         paper_bgcolor = 'rgb(248,245,252)',
+         plot_bgcolor = 'rgb(245,248,252)') %>%
+  add_annotations(paste(round(d$y, digits = 2),"%"),
+                  showarrow = F,
+                  xref = "x",
+                  yref = "y",
+                  y = d$y/2)
+bar2
+
+
+```
+  
+It is observed that the average refusal rate in countries with more than $50\%$ *Muslim* population is the highest, around $37\%$. This is a huge proportion if we consider the fact that only $23.2\%$ of the world's total population are Muslims. Second in the list is countries with more than $50\%$ *Buddhist* population. *Jews* have the easiest access to USA.  
+
+So, it is observed that GDP per capita of a country and Religion both play an important role in the visa processing system of USA. They are by no means exhaustive. Various other factors are at play when it comes to visa processing.  
+
+To conclude, before planning a trip to the U.S., better check your country's GDP per capita and your religion to get a estimate of your chances of getting a visa!  
+
+***  
+
+*sources:*  
+1. [World Bank Indicators: GPD per capita (current U.S. $) 2015](http://databank.worldbank.org/data/reports.aspx?source=2&series=NY.GDP.PCAP.CD&country=)  
+2. [Pew Forum: Religious Composition by Country.](http://www.pewforum.org/files/2012/12/globalReligion-tables.pdf)  
+3. [U.S. Department Of State: Adjusted Refusal Rate (B visas) by Nationality Fiscal Year 2016*](https://travel.state.gov/content/dam/visas/Statistics/Non-Immigrant-Statistics/RefusalRates/FY16.pdf)
